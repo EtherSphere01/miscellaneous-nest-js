@@ -25,7 +25,7 @@ export class UsersController {
 
   @Post()
   createUser(@Body() body: createUserDto) {
-    return body;
+    return this.usersService.createUser(body);
   }
   @Patch()
   patchUser(@Body() body: PatchUserDto) {
