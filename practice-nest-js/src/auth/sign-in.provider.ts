@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   RequestTimeoutException,
   UnauthorizedException,
@@ -7,6 +8,9 @@ import { SignInDto } from './dtos/signin.dto';
 import { UsersService } from 'src/users/users.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HashingProvider } from './hashing.provider';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigType } from '@nestjs/config';
+import jwtConfig from './config/jwt.config';
 
 @Injectable()
 export class SignInProvider {
@@ -18,6 +22,15 @@ export class SignInProvider {
     //   inject hashing provider
 
     private readonly hashingProvider: HashingProvider,
+
+    //   inject jwt service
+
+    private readonly jwtService: JwtService,
+
+    //   inject jwt config
+
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
   ) {}
 
   async signIn(signInDto: SignInDto) {
@@ -38,12 +51,30 @@ export class SignInProvider {
       });
     }
 
-      if (!isEqual) {
-          throw new UnauthorizedException(
-              'Password is incorrect. Please try again',
-          );
-      }
+    if (!isEqual) {
+      throw new UnauthorizedException(
+        'Password is incorrect. Please try again',
+      );
+    }
 
-    return true;
+    //   return jwt token
+    //   generate access token
+
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+      },
+      {
+        audience: this.jwtConfiguration.audience,
+        issuer: this.jwtConfiguration.issuer,
+        secret: this.jwtConfiguration.secret,
+        expiresIn: this.jwtConfiguration.accessTokenTtl,
+      },
+    );
+
+    return {
+      accessToken,
+    };
   }
 }
