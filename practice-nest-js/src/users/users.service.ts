@@ -11,6 +11,8 @@ import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createUserDto } from './dtos/create-user.dto';
 import { ConfigService } from '@nestjs/config';
+import { CreateUserProvider } from './create-user.provider';
+import { FindOneUserByEmailProvider } from './find-one-user-by-email.provider';
 
 @Injectable()
 export class UsersService {
@@ -23,38 +25,18 @@ export class UsersService {
     // injecting config service
 
     private readonly configService: ConfigService,
+
+    // inject create user provider
+
+    private readonly createUserProvider: CreateUserProvider,
+
+    // inject find one user by email provider
+
+    private readonly findOneUserByEmailProvider: FindOneUserByEmailProvider,
   ) {}
 
   public async createUser(createUserDto: createUserDto) {
-    let existingUser;
-    try {
-      // check is user already exists
-      existingUser = await this.usersRepository.findOne({
-        where: { email: createUserDto.email },
-      });
-    } catch (error) {
-      // handle error if user already exists
-      throw new RequestTimeoutException(
-        'User already exists with this email address',
-        {
-          cause: error,
-          description: 'User already exists with this email address',
-        },
-      );
-    }
-    if (existingUser) {
-      throw new BadRequestException(
-        'User already exists with this email address',
-      );
-    } else {
-      // handle exceptions if user already exists
-
-      // create user
-      let user = this.usersRepository.create(createUserDto);
-      // save user to database
-      user = await this.usersRepository.save(user);
-      return user;
-    }
+    return this.createUserProvider.createUser(createUserDto);
   }
 
   public findAll() {
@@ -76,5 +58,9 @@ export class UsersService {
         email: 'doe@gmail.com',
       },
     ];
+  }
+
+  async findOneUserByEmail(email: string) {
+    return await this.findOneUserByEmailProvider.findOneUserByEmail(email);
   }
 }
